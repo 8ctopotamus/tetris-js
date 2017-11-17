@@ -23,19 +23,19 @@
     </style>
   </head>
   <body>
-    <div class="player">
-      <div class="score"></div>
-      <canvas class="tetris" width="240" height="400"></canvas>
-    </div>
+    <template id="player-template">
+      <div class="player">
+        <div class="score"></div>
+        <canvas class="tetris" width="240" height="400"></canvas>
+      </div>
+    </template>
 
-    <div class="player">
-      <div class="score"></div>
-      <canvas class="tetris" width="240" height="400"></canvas>
-    </div>
+    <script src="client/tetris-manager.js"></script>
+    <script src="client/connection-manager.js"></script>
 
-    <script src="arena.js"></script>
-    <script src="player.js"></script>
-    <script src="tetris.js"></script>
-    <script src="main.js"></script>
+    <script src="client/arena.js"></script>
+    <script src="client/player.js"></script>
+    <script src="client/tetris.js"></script>
+    <script src="client/main.js"></script>
   </body>
 </html>

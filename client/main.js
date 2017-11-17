@@ -1,26 +1,15 @@
-const tetri = []
-const playerElements = document.querySelectorAll('.player')
+const tetrisManager = new TetrisManager(document)
+const localTetris = tetrisManager.createPlayer()
 
-// this is the ES6 way... wasn't working in firefox
-// [...playerElements].forEach(element => {
-//   const tetris = new Tetris(element)
-//   tetri.push(tetris)
-// })
-
-// had to use the old way
-const playerElementsArr = Array.prototype.slice.call(playerElements)
-
-playerElementsArr.forEach(element => {
-  const tetris = new Tetris(element)
-  tetri.push(tetris)
-})
+const connectionManager = new ConnectionManager()
+connectionManager.connect('ws://localhost:9000')
 
 const keyListener = (event) => {
   [
     [65, 68, 81, 69, 83],
     [72, 75, 89, 73, 74],
-  ].forEach((key, i) => {
-    const player = tetri[i].player
+  ].forEach((key, index) => {
+    const player = localTetris.player
 
     if (event.type === 'keydown') {
       if (event.keyCode === key[0]) { // left
