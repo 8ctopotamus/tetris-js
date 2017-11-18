@@ -6,6 +6,10 @@ const server = new WebSocketServer({port: 9000})
 
 const sessions = new Map
 
+function createClient(conn, id = createId()) {
+  return new Client(conn, id)
+}
+
 function createId(len = 6, chars = 'abcdefghjkmnopqrstwxyz0123456789') {
   let id = ''
   while (len--) {
@@ -14,24 +18,43 @@ function createId(len = 6, chars = 'abcdefghjkmnopqrstwxyz0123456789') {
   return id
 }
 
+function createSession(id = createId()) {
+  if (sessions.has(id)) {
+    throw new Error (`Session ${id} already exists`)
+  }
+  const session = new Session(id)
+  console.log('Creating session', session)
+  sessions.set(id, session)
+  return session
+}
+
+function getSession(id) {
+  return sessions.get(id)
+}
+
 server.on('connection', conn => {
   console.log('Connection established.')
-  const client = new Client(conn)
+  const client = createClient(conn)
 
   conn.on('message', msg => {
     console.log(`Message received: ${msg}`)
     const data = JSON.parse(msg)
 
     if (data.type === 'create-session') {
-      const id = createId()
-      const session = new Session(id)
+      const session = createSession()
       session.join(client)
-      sessions.set(session.id, session)
       client.send({
         type: 'session-created',
         id: session.id
       })
+    } else if (data.type === 'join-session') {
+      const session = getSession(data.id) || createSession(data.id)
+
+      console.log(sessions)
+      session.join(client)
     }
+
+    console.log('Sessions', sessions)
 
   })
 
