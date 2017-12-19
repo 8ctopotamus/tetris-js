@@ -23,16 +23,15 @@ class Tetris
     ]
 
     let lastTime = 0
-    const update = (time = 0) => {
+    this._update = (time = 0) => {
       const deltaTime = time - lastTime
       lastTime = time
 
       this.player.update(deltaTime)
 
       this.draw()
-      requestAnimationFrame(update)
+      requestAnimationFrame(this._update)
     }
-    update()
 
     this.updateScore()
   }
@@ -59,6 +58,33 @@ class Tetris
         }
       })
     })
+  }
+
+  run()
+  {
+    this._update()
+  }
+
+  serialize()
+  {
+    return {
+      arena: {
+        matrix: this.arena.matrix
+      },
+      player: {
+        matrix: this.player.matrix,
+        pos: this.player.pos,
+        score: this.player.score,
+      }
+    }
+  }
+
+  unserialize(state)
+  {
+    this.arena = Object.assign(state.arena)
+    this.player = Object.assign(state.player)
+    this.updateScore(this.player.score)
+    this.draw()
   }
 
   updateScore()

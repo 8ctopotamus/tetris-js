@@ -13,12 +13,18 @@
         font-size: 2em;
         text-align: center;
       }
+
+      canvas {
+        border: solid .2em #707070;
+        height: 90vh;
+      }
+
       .player {
         flex: 1 1 auto;
       }
-      canvas {
-        border: solid .2em #fff;
-        height: 90vh;
+
+      .player.local canvas {
+        border-color: #fff;
       }
     </style>
   </head>
@@ -32,8 +38,8 @@
 
     <script src="client/tetris-manager.js"></script>
     <script src="client/connection-manager.js"></script>
-
     <script src="client/arena.js"></script>
+    <script src="client/events.js"></script>
     <script src="client/player.js"></script>
     <script src="client/tetris.js"></script>
     <script src="client/main.js"></script>

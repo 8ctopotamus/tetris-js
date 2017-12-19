@@ -32,6 +32,24 @@ function getSession(id) {
   return sessions.get(id)
 }
 
+function broadcastSession(session) {
+  const clients = [...session.clients]
+  clients.forEach(client => {
+    client.send({
+      type: 'session-broadcast',
+      peers: {
+        you: client.id,
+        clients: clients.map(client => {
+          return {
+            id: client.id,
+            state: client.state
+          }
+        }),
+      }
+    })
+  })
+}
+
 server.on('connection', conn => {
   console.log('Connection established.')
   const client = createClient(conn)
@@ -43,19 +61,24 @@ server.on('connection', conn => {
     if (data.type === 'create-session') {
       const session = createSession()
       session.join(client)
+      
+      client.state = data.state
       client.send({
         type: 'session-created',
         id: session.id
       })
     } else if (data.type === 'join-session') {
       const session = getSession(data.id) || createSession(data.id)
-
-      console.log(sessions)
       session.join(client)
+      client.state = data.state
+      broadcastSession(session)
+    } else if (data.type === 'state-update') {
+      const [prop, value] = data.state
+      client.state[data.fragment][prop] = value
+      client.broadcast(data)
     }
 
-    console.log('Sessions', sessions)
-
+    // console.log('Sessions', sessions)
   })
 
   conn.on('close', () => {
@@ -67,5 +90,7 @@ server.on('connection', conn => {
         sessions.delete(session.id)
       }
     }
+
+    broadcastSession(session)
   })
 })

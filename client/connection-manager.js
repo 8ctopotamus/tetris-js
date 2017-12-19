@@ -1,8 +1,12 @@
 class ConnectionManager
 {
-  constructor()
+  constructor(tetrisManager)
   {
     this.conn = null
+    this.peers = new Map
+
+    this.tetrisManager = tetrisManager
+    this.localTetris = [...tetrisManager.instances][0]
   }
 
   connect(address)
@@ -12,6 +16,7 @@ class ConnectionManager
     this.conn.addEventListener('open', () => {
       console.log('Connection established')
       this.initSession()
+      this.watchEvents()
     })
 
     this.conn.addEventListener('message', event => {
@@ -23,15 +28,110 @@ class ConnectionManager
   initSession()
   {
     const sessionId = window.location.hash.split('#')[1]
+    const state = this.localTetris.serialize()
     if (sessionId) {
       this.send({
         type: 'join-session',
-        id: sessionId
+        id: sessionId,
+        state,
       })
     } else {
       this.send({
-        type: 'create-session'
+        type: 'create-session',
+        state,
       })
+    }
+  }
+
+  watchEvents()
+  {
+    const local = this.localTetris
+    const player = local.player
+
+    const playerEventNames = ['pos', 'matrix', 'score']
+    playerEventNames.forEach(prop => {
+      player.events.listen(prop, value => {
+
+        this.send({
+          type: 'state-update',
+          fragment: 'player',
+          state: [prop, value]
+        })
+      })
+    })
+
+    const arenaEventNames = ['matrix']
+    const arena = local.arena
+    arenaEventNames.forEach(prop => {
+      arena.events.listen(prop, value => {
+        this.send({
+          type: 'state-update',
+          fragment: 'arena',
+          state: [prop, value]
+        })
+      })
+    })
+  }
+
+  updateManager(peers)
+  {
+    const me = peers.you
+    const clients = peers.clients.filter(client => me !== client.id)
+    clients.forEach(client => {
+      if (!this.peers.has(client.id)) {
+        const tetris = this.tetrisManager.createPlayer()
+        tetris.unserialize(client.state)
+        this.peers.set(client.id, tetris)
+      }
+    })
+
+    // [...this.peers.entries()].forEach(([id, tetris]) => {
+    //   if (clients.indexOf(id) === -1) {
+    //     this.tetrisManager.removePlayer(tetris)
+    //     this.peers.delete(id)
+    //   }
+    // })
+
+    // ^^^ pasted the above into
+    // the babel REPL
+    // it was not working in chrome
+    "use strict";
+    var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+    function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+    [].concat(_toConsumableArray(this.peers.entries())).forEach((_ref) => {
+      var _ref2 = _slicedToArray(_ref, 2),
+        id = _ref2[0],
+        tetris = _ref2[1]
+
+      if (!clients.some(client => client.id === id)) {
+        this.tetrisManager.removePlayer(tetris)
+        this.peers.delete(id)
+      }
+    })
+
+    const sorted = peers.clients.map(client => {
+      return this.peers.get(client.id) || this.localTetris
+    })
+    this.tetrisManager.sortPlayers(sorted)
+
+  }
+
+  updatePeer(id, fragment, [prop, value])
+  {
+    if (!this.peers.has(id)) {
+      console.error('Client does not exist', id)
+      return
+    }
+
+    const tetris = this.peers.get(id)
+    tetris[fragment][prop] = value
+
+    if (prop === 'score') {
+      tetris.updateScore(value)
+    } else {
+      tetris.draw()
     }
   }
 
@@ -40,6 +140,10 @@ class ConnectionManager
     const data = JSON.parse(msg)
     if (data.type === 'session-created') {
       window.location.hash = data.id
+    } else if (data.type === 'session-broadcast') {
+      this.updateManager(data.peers)
+    } else if (data.type === 'state-update') {
+      this.updatePeer(data.clientId, data.fragment, data.state)
     }
   }
 
