@@ -4,7 +4,7 @@
   "description": "multiplayer tetris websockets",
   "main": "index.js",
   "scripts": {
-    "start": "node server/main.js",
+    "start": "node server/main.js | http-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/8ctopotamus/tetris-js#readme",
   "dependencies": {
+    "express": "^4.16.2",
+    "http-server": "^0.10.0",
     "ws": "^3.3.1"
   }
 }

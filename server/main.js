@@ -22,6 +22,7 @@ function createSession(id = createId()) {
   if (sessions.has(id)) {
     throw new Error (`Session ${id} already exists`)
   }
+
   const session = new Session(id)
   console.log('Creating session', session)
   sessions.set(id, session)
@@ -61,7 +62,7 @@ server.on('connection', conn => {
     if (data.type === 'create-session') {
       const session = createSession()
       session.join(client)
-      
+
       client.state = data.state
       client.send({
         type: 'session-created',
